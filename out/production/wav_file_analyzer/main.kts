@@ -1,4 +1,5 @@
 import java.io.File
+import java.io.FileInputStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import kotlin.system.exitProcess
@@ -18,15 +19,31 @@ if(fileStream.isEmpty()){
     exitProcess(-2)
 }
 
+fun ByteArray.copyOfRange(target: Pair<Int,Int >) = this.copyOfRange(target.first, target.second)
+
+fun ByteArray.getTargetBytes( kind: WaveFileElement) = this.copyOfRange(kind.getStartAndFinish())
+fun ByteArray.toConcatString() = this.map{it.toChar()}.fold(""){ r, i -> r + i }
+fun ByteArray.toIntByLittleEndian() = ByteBuffer.wrap(this).order(ByteOrder.LITTLE_ENDIAN).getInt()
+
+fun WaveFileElement.getStartAndFinish(): Pair<Int,Int> =
+    when(this){
+        WaveFileElement.ChunkID -> Pair(0,4)
+        WaveFileElement.ChunkSize -> Pair(4,8)
+    }
+
+enum class WaveFileElement{
+    ChunkID,
+    ChunkSize
+}
+
+
 // ChunkID
-val chunkID = fileStream.copyOfRange(0,4)
-val chunkIDString = chunkID.map { it.toChar() }.fold(""){ r, i -> r + i }
-println("chunkIDString: ${chunkIDString}")
+val chunkId = fileStream.getTargetBytes(WaveFileElement.ChunkID).toConcatString()
+println("chunkIDString: ${chunkId}")
 
 // ChunkSize
-val chunkSizeBytes = fileStream.copyOfRange(4,8)
-val chunkSizeInt = ByteBuffer.wrap(chunkSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getInt()
-println("chunkSize: ${chunkSizeInt}")
+val chunkSize = fileStream.getTargetBytes(WaveFileElement.ChunkSize).toIntByLittleEndian()
+println("chunkSize: ${chunkSize}")
 
 // Format
 val format = fileStream.copyOfRange(8,11).map { it.toChar() }.fold("",{r,i -> r + i})
