@@ -1,4 +1,6 @@
 import java.io.File
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.system.exitProcess
 
 val file = File("cat1.wav")
@@ -20,7 +22,9 @@ val chunkID = fileStream.copyOfRange(0,4)
 val chunkIDString = chunkID.map { it.toChar() }.fold(""){ r, i -> r + i }
 println("chunkIDString: ${chunkIDString}")
 
-val chunkSizeBytes = fileStream.copyOfRange(4,7)
+val chunkSizeBytes = fileStream.copyOfRange(4,8)
+val chunkSizeInt = ByteBuffer.wrap(chunkSizeBytes).order(ByteOrder.LITTLE_ENDIAN).getInt()
+println("chunkSize: ${chunkSizeInt}")
 
 val format = fileStream.copyOfRange(8,11).map { it.toChar() }.fold("",{r,i -> r + i})
 println("format: ${format}")
@@ -33,7 +37,6 @@ val audioFormatString = when(audioFormat){
     1.toByte() -> "PCM"
     else -> "No infomation for audio format"
 }
-
 println("Audio format: ${audioFormatString}")
 
 val audioNumber = fileStream.copyOfRange(22,24).elementAt(0)
